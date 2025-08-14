@@ -13,4 +13,15 @@ My tasks in this project were to:
 - Create an executive dashboard
 - Configure alerts and subscriptions
 
-***Prerequisite***: Data Analyst Roadmap, Power BI, Python
+***Prerequisite***: Data Analyst Roadmap, Power BI, Python  
+
+**Project - Traders Data Analysis**  
+Datasets: [Countries]('Dataset\Countries.xlsx'), [Purchase]('Dataset\Purchases.xlsx'), [Sales]('Dataset\Tailwind-Traders-Sales.xlsx')  
+
+**Objective**
+
+1. Sales Overview       
+![Sales Overview](Images of Project/sales-overview.png)
+2. Profit Overview  
+![Profit Overview](Images of Project/profit-overview.png)
+
