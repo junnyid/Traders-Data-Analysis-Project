@@ -21,7 +21,7 @@ Datasets: [Countries]('Dataset\Countries.xlsx'), [Purchase]('Dataset\Purchases.x
 **Objective**
 
 1. Sales Overview       
-![Sales Overview](Images of Project/sales-overview.png)
+<p align="center"><img src="https://github.com/junnyid/Traders-Data-Analysis-Project/blob/main/Images%20of%20Project/sales-overview.png" alt="Sales Overview " width="80%" height="80%"/></p>
 2. Profit Overview  
-![Profit Overview](Images of Project/profit-overview.png)
+<p align="center"><img src="https://github.com/junnyid/Traders-Data-Analysis-Project/blob/main/Images%20of%20Project/profit-overview.png" alt="Profit Overview " width="80%" height="80%"/></p>
 
