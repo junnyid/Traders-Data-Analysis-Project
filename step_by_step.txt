@@ -1,0 +1,318 @@
+Configure data sources
+    - Load Tailwind-Traders-Sales.xlsx file into Power BI
+        * To complete optimization:
+        Gross Product Price = Fixed Decimal Number
+        Cost per Unit = Fixed Decimal Number
+        Tax Per Product = Fixed Decimal Number
+        Quantity Purchased = Whole Number
+        Gross Revenue = Fixed Decimal Number
+        Total Tax = Fixed Decimal Number
+        Net Revenue = Fixed Decimal Number
+        Profit = Fixed Decimal Number
+        Loyalty Points = Whole Number
+        Stock = Whole Number
+        Product Category = Text
+        Rating = Fixed Decimal Number
+
+    - Load Purchases.xlxs file into Power BI
+        * To complete optimization
+        PurchaseID = Whole Number
+        OrderID = Whole Number
+        Return Policy (Days) = Whole Number
+        Purchase Date = Date
+        Warranty (Months) = Whole Number
+        Supplier = Text
+        Last Visited = Date
+        ReturnStatus = Text
+
+    - Load Countries.xlxs file into Power BI
+        * To complete optimization
+        Country ID = Whole Number
+        Exchange ID = Whole Number
+        Country = Text
+    
+    - Load the Historical Currency Exchange data
+        + Select Get data
+        + Search for Python script, and select Connect
+        + In the script windown, code:
+            import pandas as pd
+            from io import StringIO
+            data = """Exchange ID;ExchangeRate;Exchange Currency
+            1;1;USD
+            2;0.75;GBP
+            3;0.85;EUR
+            4;3.67;AED
+            5;1.3;AUD"""
+            df = pd.read_csv(StringIO(data), sep=';')
+
+
+            # Return the transformed dataframe
+            df
+        + Select df and then select Load to add the data to your report
+
+
+Design and develop the data model
+    - Create a relationship between the Countries and Exchange Datatables:
+        + In the name field, rename the table df into Exchange Data
+        + Create a relationship between the Countries and Exchange Data tables on the Exchange ID field: Drag Exchange ID from Countries table to Exchange ID in Exchange Data table
+        + Set the "Cardinality" to One to One (1:1)
+        + Set the "Cross filter direction" to Both to be bi-directional
+        + Ensure the "Make this relationship active" checkbox is selected
+    - Create a relationship between Sales and Countries
+        + Create a relationship on the Country ID field between the Sales and Countries tables
+        + Set the "Cardinality" to Many to One (1:1)
+        + Set the "Cross filter direction" to Both to be bi-directional
+        + Ensure the "Make this relationship active" checkbox is selected
+    - Create a relationship between the Purchases and Sales tables
+        + Create a relationship on the OrderID field between the Purchases and Sales tables
+        + Set the "Cardinality" to One to One (1:1)
+        + Set the "Cross filter direction" to Both to be bi-directional
+        + Ensure the "Make this relationship active" checkbox is selected
+    - Create the Calendar table
+        + To create a new table, select New Table
+        + In the calculation field, add the following DAX code to create a new Calendar table:
+            CalendarTable = 
+            ADDCOLUMNS(
+            CALENDAR(DATE(2020, 1, 1), DATE(2023, 12, 31)),
+            "Year", YEAR([Date]),
+            "Month Number", MONTH([Date]),
+            "Month", FORMAT([Date], "MMMM"),
+            "Quarter", QUARTER([Date]),
+            "Weekday", WEEKDAY([Date]),
+            "Day", DAY([Date])
+            )
+    - Create a relationship between the Calendar and Purchases tables
+        + Move the new Calendar Table closer to Purchases. Then, create a relationship on the Date field between the Calendar and the Purchase Date in the Purchases table
+        + Set the Cardinality to Many to One (*:1).
+        + Set the Cross filter direction to Single.
+        + Ensure the Make this relationship active checkbox is selected.\
+    - Create Sales in USD Calculated Table
+        + To create a new table, select New Table
+        + add the following DAX code
+            Sales in USD = 
+            ADDCOLUMNS(
+                Sales,
+                "Country Name", RELATED(Countries[Country]),
+                "Exchange Rate", RELATED('Exchange Data'[Exchange Rate]),
+                "Exchange Currency", RELATED('Exchange Data'[Exchange Currency]),
+                "Cost per Unit USD", [Cost per Unit] * RELATED('Exchange Data'[Exchange Rate]),
+                "Gross Revenue USD", [Gross Revenue] * RELATED('Exchange Data'[Exchange Rate]),
+                "Net Revenue USD", [Net Revenue] * RELATED('Exchange Data'[Exchange Rate]),
+                "Total Tax USD", [Total Tax] * RELATED('Exchange Data'[Exchange Rate]),
+                "Profit USD", [Profit] * RELATED('Exchange Data'[Exchange Rate]))
+    - Create a relationship between the Sales in USD and Sales tables
+        + create a relationship between the Sales in USD and Sales tables on the Order ID field
+        + Set the "Cardinality" to Many to One (1:1)
+        + Set the "Cross filter direction" to Both to be bi-directional
+        + Ensure the "Make this relationship active" checkbox is selected
+
+
+Configure aggregations using DAX
+    - Calculate Yearly Profit margin
+        + Create a new measure for the Sales in USD tableL: Right-click on the Sales in USD table in the Fields pane and select New Measure.
+        + input the provided DAX formula
+            Yearly Profit Margin = 
+            DIVIDE(
+                SUM('Sales in USD'[Profit USD]),
+                SUM('Sales in USD'[Net Revenue USD])
+            )
+        + In the Fields pane, select the new measure and change its format to Percentage in the Properties pane
+    - Calculate Quarterly Profit
+        + Right-click on the Sales in USD table in the Fields pane and choose New Measure
+        + input the provided DAX formula
+            Quarterly Profit Margin = 
+            CALCULATE(
+                [Yearly Profit Margin],
+                DATESQTD('CalendarTable'[Date])
+            )
+        + Format the new measure as a Percentage.
+    - Calculate Year-to-Date Profit
+        + Right-click on the Sales in USD table in the Fields pane and select New Measure
+        + input the provided DAX formula
+            YTD Profit Margin = TOTALYTD([Yearly Profit Margin],'CalendarTable'[Date])
+        + Format the new measure as a Percentage
+    - Calculate Median Sales
+        + Right-click on the Sales in USD table in the Fields pane and choose New Measure
+        + input the provided DAX formula
+            Median Sales = MEDIAN('Sales in USD'[Gross Revenue USD])
+    - Access the Performance Analyzer
+        + Navigate to the View Tab
+        + Select Performance Analyzer
+        + From the Visualizations pane, select the Card icon to create an empty Card visual on your canvas. Then create three more Card visuals, so you have four in total
+        + For each Card visual:
+            Find the Sales in USD table in the Fields pane
+            Drag one of these measures to the Fields well in the Visualizations pane:
+                Yearly Profit Margin
+                Quarterly Profit Margin
+                YTD Profit Margin
+                Median Sales
+        + Begin recording the performance of the card visuals using the Performance Analyzer’s recording feature
+        + Refresh your reports to test their performance. You can refresh a report using two methods: 
+            Select the Refresh button in the Home tab of the ribbon interface
+            Interact directly with the report.
+        +  Select Stop and remove all Card visuals, resulting in a blank Canvas.
+
+
+Create a Sales report
+        - Double clicl to Rename the page to Sales Overview
+        - Create a bar chart for loyalty points by country
+            + From the Visualizations pane, select the clustered bar chart
+            + Add data from the Sales in USD table:
+                Drag Country Name to the Y-axis field
+                Drag Loyalty Points to the X-axis field
+            + Select General, then expand the Title card. Change the text to "Loyalty Points by Country"
+            + Enable data labels. In the Format tab, select Visual. Then in the Data labels card, set the Show toggle to On
+        - Create a column chart for Quantity Sold by Product
+            + From the Visualizations pane, select the clustered column chart
+            + Add data from the Sales in USD table:
+                Drag Product to the X-axis field
+                Drag Quantity to the Y-axis field
+            + Select General, then expand the Title card. Change the text to "Quantity Sold by Product”
+            + Enable data labels. In the Format tab, select Visual, then expand the Data labels card. Set the Show toggle to On.
+        -  Create a pie chart for median sales distribution by country
+            + From the Visualizations pane, select the pie chart
+            + Add data from the Sales in USD table:
+                Drag Country to the Legend field
+                Drag Median Sales to the Values field
+            +Select General, then expand the Title card. Change the text to "Median Sales Distribution by Country.”
+            + Set detailed labels. In the Format tab, select Visual. In Detail labels set the toggle to On.
+            + Sort the data in ascending order, by selecting the ellipses located at the top right corner of the visualization. Select the Sort Axis dropdown, then select Sort ascending
+        - Create a line chart for median sales over time
+            + From the Visualizations pane, select the line chart
+            + Add data from the Sales in USD and CalendarTable tables:
+                From CalendarTable, drag Date to the X-axis field
+                From Sales in USD, drag Median Sales to the Y-axis field
+            + Select General, then expand the Title card. Change the text to "Median Sales Over Time.”
+            + In Detail labels set the toggle to On.
+            + Enable a Trend line. In the Format tab, select Analytics (the magnifying glass icon). Then in the Trend line card, set the toggle to On
+        - Create cards to visualize your measures
+            + Add data from the Sales in USD table
+                Drag Stock to the Fields section
+                Drag Quantity Purchased to the Fields section
+                Drag Median Sales to the Fields section
+        - Add a slicer to the report
+            + Add data from the Sales in USD table:
+                Drag Country Name to the Fields section
+            + Format the Slicer as a Dropdown. Select the Format visual tab, then select the Visual tab. Expand Slicer settings, then expand Options. From the Style dropdown, select Dropdown.
+            + Format your report using the Accessible City Park theme
+
+
+Create a Profit report
+    - Create a new page in your existing Sales Overview report and name it Profit Overview.
+    - Create a bar chart for Net Revenue by Product
+        + From the Visualizations pane, select the clustered bar chart
+        + Add data from the Sales in USD table:
+            Drag Product Name to the Y-axis field
+            Drag Net Revenue USD to the X-axis field
+        + Select General, then expand the Title card. Change the text to "Net Revenue by Product"
+        + in the Data labels card, set the Show toggle to On.
+        + Select the Sort Axis dropdown, then select Sort descending
+    - Create a donut chart for Yearly Profit Margin by Country
+        + From the Visualizations pane, select the donut chart
+        + Add data from the Sales in USD table:
+            Drag Country Name to the Legend area
+            Drag Yearly Profit Margin to the Values area
+        + Select General, then expand the Title card. Change the text to "Yearly Profit Margin by Country"
+        + in the Detail labels card, set the toggle to On
+        + Expand the Detail labels card, then expand Options. In the Label contents dropdown select Category, percent of total
+    - Create an area chart for Yearly Profit Margin over Time
+        + From the Visualizations pane, select the area chart. 
+        + Add data from the CalendarTable and Sales in USD table:
+            From the CalendarTable table, drag Date to the X-axis field
+            From the Sales in USD table, drag Yearly Profit Margin to the Y-axis field
+        + Select General, then expand the Title card. Change the text to "Yearly Profit Margin Over Time"
+        + in the Data labels card, set the toggle to On
+    - Create cards to visualize your measures
+        + Add data from the Sales in USD table
+            Drag YTD Profit Margin to the Fields section
+            Drag Net Revenue USD to the Fields section
+    - Create a KPI for Gross Revenue USD
+        + From the Visualizations pane, select KPI chart
+        + Add data from the Sales in USD table:
+            Drag Gross Revenue USD to the value area 
+            Drag Date to the Trend Axis area.
+        + Select General, then expand the Title card. Change the text to "Gross Revenue"
+    - Add a slicer to the report
+        + From the Visualizations pane, select the slicer visualization.
+        + Add data from the CalendarTable table
+            Drag Date to the Fields section
+            
+            
+Publish project
+    - In the Home tab, select Publish.
+    - In the dialog box, select My Workspace and then Select.
+    - Power BI will publish your report. Depending on the size of the report and your internet connection, this process could take a few moments.
+    - Once the report is published a new dialog box will appear, with an option to Open the report in Power BI Service, as well as Got it, and Get Quick Insights. Select Open to launch your web browser and review your report in Power BI Service. 
+
+
+Creating an executive dashboard
+    - Create a new dashboard
+        + Navigate to My Workspace in your workspace.
+        + In the Navigation view, click the + New button at the top-left corner of the screen.
+        + From the list of options, select Dashboard.
+        + In the Create a dashboard pop-up window, enter Traders Executive Dashboard in the Name field
+        + Click Create to generate a new dashboard shell.
+    - Pin Sales Overview core visualizations
+        + Navigate to My Workspace and open the Traders Report
+        + In the report, go to the Sales Overview tab
+        + Locate the Loyalty Points by Country bar chart and select the pin icon
+        + When the Pin to dashboard dialog box appears, choose Traders Executive Dashboard and click Pin to confirm.
+        + Repeat this process for the following charts:
+            Quantity Sold by Product column chart
+            Median Sales Distribution by Country pie chart
+            Median Sales Over Time line chart
+        + Pin the Sales Overview cards visualizations
+    - Pin the Profit Overview core visualizations
+        + Locate the Net Revenue by Product bar chart and select the pin icon
+        + Repeat this process for the following charts:
+            Yearly Profit Margin by Country donut chart
+            Year Profit Margin over Time area chart
+        + Pin Profit Overview Cards and KPI Visualizations
+    - Configure the Mobile View for the cards and KPI visuals
+        + Navigate to Workspaces and select My Workspace
+        + From the list of dashboards, choose the Traders Executive Dashboard
+        + From the main navigation bar, select Edit, then choose Mobile layout to switch the view from desktop to mobile. The screen will adjust to a vertical layout, simulating a mobile device.
+        + If all of the visuals appear on the mobile device, select Unpin icon tile to unpin all tiles
+        + Pin and arrange the visuals on the mobile canvas in the following order:
+            Pin Sum of Net Revenue USD
+            Pin Sum of Quantity Purchased card
+            Drag Sum of Quantity Purchased card to the right of Net Revenue card
+            Pin Median Sales card. 
+            Pin YTD Profit card and drag to the right of Median Sales card
+            Pin Sum of Gross Revenue USD KPI across the full width of the layout
+    - Configure the Mobile View for the core visualizations
+        + Pin and arrange the visuals on the mobile canvas in the following order:
+            Pin Loyalty Points by Country bar chart
+            Quantity Sold by Product column chart
+            Median Sales Distribution by Country pie chart
+            Median Sales over Time line chart. 
+            Net Revenue by Product bar chart
+            Yearly Profit Margin by Country donut chart
+            Yearly Profit Margin over Time area chart
+
+
+Configuring alerts and subscriptions
+    - Create a daily alert for Gross Revenue USD
+        + Select the Desktop icon to return to the Traders Executive Dashboard.
+        + Locate the Sum of Gross Revenue USD KPI tile and select the ellipses icon
+        + From the options that appear, select Manage alerts.
+        + In the Manage alerts screen, select + New alert rule to create a new alert.
+        + In Alert title, enter Gross Revenue USD below $400.
+        + In the Condition dropdown menu, select Below
+        + In the Threshold section, enter 400 to set the threshold.
+        + Set Maximum notification frequency to At most every 24 hours
+        + Once you’ve set all required parameters, select Save and close to save your alert settings and activate the alert rule
+    - Create a subscription for Sales Overview
+        + Navigate to My Workspace, locate the Traders Report in the list of reports, and open it.
+        + Access the report’s Sales Overview tab
+        + Select the ellipses next to the Edit button and choose Subscribe. 
+        + In the Subscription pane, select Create a subscription.
+        + In the Subscription pane, name the subscription Sales Weekly Summary
+        + Set the Start date to today’s date and the End date to 12/31/2025
+        + Scroll down, and in the Repeat dropdown select Weekly as the frequency and choose Monday as the day.
+        + Set the Scheduled time to 5:00 AM
+        + Expand More options, and in the Report page dropdown ensure the Sales Overview report page is selected.
+        + Activate the toggles for the following options: Permission to view the report in Power BI, Link to the report in Power BI, and Report page preview.
+        + Select Save to confirm and activate the subscription
+    -  Create a subscription for Profit Overview
+        Similar to the above
