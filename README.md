@@ -4,7 +4,7 @@
 **About the Project**  
 Tailwind Traders is a fictitious retail company showcasing the future of intelligent application experiences. These reference apps are all are powered by the Azure cloud, built with best-in-class tools, and made smarter through data and AI.
 Tailwind Traders requires a detailed report that outlines the company’s latest sales data. The report must contain gross amounts and the difference between gross and net sales. Let’s help Tailwind Traders create this report so it can shape its future sales strategies.
-<img width="512" height="240" alt="image" src="https://github.com/user-attachments/assets/bc3deb64-6f69-4890-a143-9fcfa0967356" />  
+<img width="800" height="240" alt="image" src="https://github.com/user-attachments/assets/bc3deb64-6f69-4890-a143-9fcfa0967356" />  
 My tasks in this project were to:
 - Prepare Sales Excel data
 - Configure data sources, design and develop the data model
